@@ -16,10 +16,10 @@ use GraphQL\Language\AST\TypeDefinitionNode;
 use GraphQL\Language\AST\TypeExtensionNode;
 use GraphQL\Language\Parser;
 use GraphQL\Utils\AST;
-use Illuminate\Contracts\Support\Arrayable;
 use JsonException;
 use Lantern\Exceptions\DefinitionException;
 use Lantern\Exceptions\SchemaSyntaxErrorException;
+use Lantern\Support\Arrayable;
 use Lantern\Support\Utils;
 
 use function is_array;
@@ -74,6 +74,11 @@ class DocumentAST implements Arrayable
     public array $typeExtensions = [];
 
     /**
+     * @var array<string, array<int, TypeDefinitionNode
+     */
+    public array $typeDefinitions = [];
+
+    /**
      * Client directive definitions.
      *
      * ['foo' => FooDirective].
@@ -86,8 +91,6 @@ class DocumentAST implements Arrayable
      * A map from class names to their respective object types.
      *
      * This is useful for the performant resolution of abstract types.
-     *
-     * @see \Nuwave\Lighthouse\Schema\TypeRegistry::typeResolverFallback()
      *
      * @var ClassNameToObjectTypeName
      */
@@ -102,7 +105,7 @@ class DocumentAST implements Arrayable
     /** Create a new DocumentAST instance from a schema.
      * @throws Exception
      */
-    public static function fromSource(string $schema) : self
+    public static function fromSource(string $schema, array $namespacesToTry) : self
     {
         try {
             $documentNode = Parser::parse(
@@ -127,14 +130,14 @@ class DocumentAST implements Arrayable
                 $instance->types[$name] = $definition;
 
                 // TODO: What's this doing that I need to refactor?
+                // This is trying to get the model classes associated with the defined types
                 if ($definition instanceof ObjectTypeDefinitionNode) {
                     $modelName = ModelDirective::modelClass($definition);
                     if ($modelName === null) {
                         continue;
                     }
 
-                    $namespacesToTry = (array)config('lighthouse.namespaces.models');
-                    $modelClass      = Utils::namespaceClassName(
+                    $modelClass = Utils::namespaceClassName(
                         $modelName,
                         $namespacesToTry,
                         static fn(string $classCandidate) : bool => is_subclass_of($classCandidate, Model::class),

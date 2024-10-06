@@ -8,7 +8,7 @@ use GraphQL\Error\ClientAware;
 use GraphQL\Error\SyntaxError;
 use GraphQL\Language\Source;
 
-class SchemaSyntaxErrorException extends \Exception implements ClientAware
+class SchemaSyntaxErrorException extends LanternException implements ClientAware
 {
     public function __construct(SyntaxError $error)
     {

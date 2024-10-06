@@ -22,7 +22,8 @@
     "require": {
         "php": "^8",
         "ext-json": "*",
-        "webonyx/graphql-php": "^15.14"
+        "webonyx/graphql-php": "^15.14",
+        "thecodingmachine/safe": "^2.5"
     },
     "require-dev": {
         "phpunit/phpunit": "^11.3"
