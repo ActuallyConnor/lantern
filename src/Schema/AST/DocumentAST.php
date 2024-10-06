@@ -87,7 +87,7 @@ class DocumentAST implements Arrayable
      *
      * This is useful for the performant resolution of abstract types.
      *
-     * @see \Nuwave\Lighthouse\Schema\TypeRegistry::typeResolverFallback()
+     * @see \Lantern\Schema\TypeRegistry::typeResolverFallback()
      *
      * @var ClassNameToObjectTypeName
      */
