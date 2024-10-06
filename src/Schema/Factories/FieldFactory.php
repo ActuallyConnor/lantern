@@ -1,26 +1,24 @@
-<?php
-
-declare(strict_types=1);
+<?php declare(strict_types=1);
 
 namespace Lantern\Schema\Factories;
 
 use GraphQL\Language\AST\FieldDefinitionNode;
+use Illuminate\Container\Container;
 use Illuminate\Contracts\Config\Repository as ConfigRepository;
 use Illuminate\Support\Collection;
-use Nuwave\Lighthouse\Execution\Arguments\ArgumentSetFactory;
-use Nuwave\Lighthouse\Schema\AST\ASTHelper;
-use Nuwave\Lighthouse\Schema\AST\ExecutableTypeNodeConverter;
-use Nuwave\Lighthouse\Schema\DirectiveLocator;
-use Nuwave\Lighthouse\Schema\Directives\BaseDirective;
-use Nuwave\Lighthouse\Schema\Factories\ArgumentFactory;
-use Nuwave\Lighthouse\Schema\RootType;
-use Nuwave\Lighthouse\Schema\Values\FieldValue;
-use Nuwave\Lighthouse\Support\Contracts\ComplexityResolverDirective;
-use Nuwave\Lighthouse\Support\Contracts\Directive;
-use Nuwave\Lighthouse\Support\Contracts\FieldMiddleware;
-use Nuwave\Lighthouse\Support\Contracts\FieldResolver;
-use Nuwave\Lighthouse\Support\Contracts\ProvidesResolver;
-use Nuwave\Lighthouse\Support\Contracts\ProvidesSubscriptionResolver;
+use Lantern\Execution\Arguments\ArgumentSetFactory;
+use Lantern\Schema\AST\ASTHelper;
+use Lantern\Schema\AST\ExecutableTypeNodeConverter;
+use Lantern\Schema\DirectiveLocator;
+use Lantern\Schema\Directives\BaseDirective;
+use Lantern\Schema\RootType;
+use Lantern\Schema\Values\FieldValue;
+use Lantern\Support\Contracts\ComplexityResolverDirective;
+use Lantern\Support\Contracts\Directive;
+use Lantern\Support\Contracts\FieldMiddleware;
+use Lantern\Support\Contracts\FieldResolver;
+use Lantern\Support\Contracts\ProvidesResolver;
+use Lantern\Support\Contracts\ProvidesSubscriptionResolver;
 
 /**
  * @phpstan-import-type FieldResolver from \GraphQL\Executor\Executor as FieldResolverFn
@@ -70,7 +68,7 @@ class FieldFactory
         ];
     }
 
-    /** @return array<\Nuwave\Lighthouse\Support\Contracts\FieldMiddleware> */
+    /** @return array<\Lantern\Support\Contracts\FieldMiddleware> */
     protected function fieldMiddleware(FieldDefinitionNode $fieldDefinitionNode): array
     {
         $globalFieldMiddleware = (new Collection($this->config->get('lighthouse.field_middleware')))

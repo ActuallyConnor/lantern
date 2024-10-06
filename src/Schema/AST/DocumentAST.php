@@ -1,14 +1,10 @@
-<?php
-
-declare(strict_types=1);
+<?php declare(strict_types=1);
 
 namespace Lantern\Schema\AST;
 
-use Exception;
 use GraphQL\Error\SyntaxError;
 use GraphQL\Language\AST\DirectiveDefinitionNode;
 use GraphQL\Language\AST\Location;
-use GraphQL\Language\AST\Node;
 use GraphQL\Language\AST\NodeList;
 use GraphQL\Language\AST\ObjectTypeDefinitionNode;
 use GraphQL\Language\AST\SchemaExtensionNode;
@@ -17,12 +13,11 @@ use GraphQL\Language\AST\TypeExtensionNode;
 use GraphQL\Language\Parser;
 use GraphQL\Utils\AST;
 use Illuminate\Contracts\Support\Arrayable;
-use JsonException;
+use Illuminate\Database\Eloquent\Model;
 use Lantern\Exceptions\DefinitionException;
 use Lantern\Exceptions\SchemaSyntaxErrorException;
+use Lantern\Schema\Directives\ModelDirective;
 use Lantern\Support\Utils;
-
-use function is_array;
 
 /**
  * Represents the AST of the entire GraphQL schema document.
@@ -40,7 +35,7 @@ use function is_array;
  *     hash: string,
  * }
  *
- * @implements Arrayable<string, mixed>
+ * @implements \Illuminate\Contracts\Support\Arrayable<string, mixed>
  */
 class DocumentAST implements Arrayable
 {
@@ -59,7 +54,7 @@ class DocumentAST implements Arrayable
      *
      * ['foo' => FooType].
      *
-     * @var NodeList<TypeDefinitionNode&Node>|array<string, TypeDefinitionNode&Node>
+     * @var \GraphQL\Language\AST\NodeList<\GraphQL\Language\AST\TypeDefinitionNode&\GraphQL\Language\AST\Node>|array<string, \GraphQL\Language\AST\TypeDefinitionNode&\GraphQL\Language\AST\Node>
      */
     public array|NodeList $types = [];
 
@@ -69,7 +64,7 @@ class DocumentAST implements Arrayable
      * Will NOT be kept after unserialization, as the type
      * extensions are merged with the types before.
      *
-     * @var array<string, array<int, TypeExtensionNode&Node>>
+     * @var array<string, array<int, \GraphQL\Language\AST\TypeExtensionNode&\GraphQL\Language\AST\Node>>
      */
     public array $typeExtensions = [];
 
@@ -78,7 +73,7 @@ class DocumentAST implements Arrayable
      *
      * ['foo' => FooDirective].
      *
-     * @var NodeList<DirectiveDefinitionNode>|array<string, DirectiveDefinitionNode>
+     * @var \GraphQL\Language\AST\NodeList<\GraphQL\Language\AST\DirectiveDefinitionNode>|array<string, \GraphQL\Language\AST\DirectiveDefinitionNode>
      */
     public array|NodeList $directives = [];
 
@@ -99,10 +94,8 @@ class DocumentAST implements Arrayable
     /** A hash of the schema. */
     public string $hash;
 
-    /** Create a new DocumentAST instance from a schema.
-     * @throws Exception
-     */
-    public static function fromSource(string $schema) : self
+    /** Create a new DocumentAST instance from a schema. */
+    public static function fromSource(string $schema): self
     {
         try {
             $documentNode = Parser::parse(
@@ -116,7 +109,7 @@ class DocumentAST implements Arrayable
             throw new SchemaSyntaxErrorException($syntaxError);
         }
 
-        $instance       = new static();
+        $instance = new static();
         $instance->hash = hash('sha256', $schema);
 
         foreach ($documentNode->definitions as $definition) {
@@ -126,25 +119,22 @@ class DocumentAST implements Arrayable
                 // Store the types in an associative array for quick lookup
                 $instance->types[$name] = $definition;
 
-                // TODO: What's this doing that I need to refactor?
                 if ($definition instanceof ObjectTypeDefinitionNode) {
                     $modelName = ModelDirective::modelClass($definition);
                     if ($modelName === null) {
                         continue;
                     }
 
-                    $namespacesToTry = (array)config('lighthouse.namespaces.models');
-                    $modelClass      = Utils::namespaceClassName(
+                    $namespacesToTry = (array) config('lighthouse.namespaces.models');
+                    $modelClass = Utils::namespaceClassName(
                         $modelName,
                         $namespacesToTry,
-                        static fn(string $classCandidate) : bool => is_subclass_of($classCandidate, Model::class),
+                        static fn (string $classCandidate): bool => is_subclass_of($classCandidate, Model::class),
                     );
 
                     if ($modelClass === null) {
                         $consideredNamespaces = implode(', ', $namespacesToTry);
-                        throw new DefinitionException(
-                            "Failed to find a model class {$modelName} in namespaces [{$consideredNamespaces}] referenced in @model on type {$name}."
-                        );
+                        throw new DefinitionException("Failed to find a model class {$modelName} in namespaces [{$consideredNamespaces}] referenced in @model on type {$name}.");
                     }
 
                     // It might be valid to have multiple types that correspond to a single model
@@ -160,7 +150,7 @@ class DocumentAST implements Arrayable
             } elseif ($definition instanceof SchemaExtensionNode) {
                 $instance->schemaExtensions[] = $definition;
             } else {
-                throw new Exception('Unknown definition type: ' . $definition::class);
+                throw new \Exception('Unknown definition type: ' . $definition::class);
             }
         }
 
@@ -172,11 +162,11 @@ class DocumentAST implements Arrayable
      *
      * This operation will overwrite existing definitions with the same name.
      *
-     * @param  TypeDefinitionNode&Node  $type
+     * @param  \GraphQL\Language\AST\TypeDefinitionNode&\GraphQL\Language\AST\Node  $type
      *
      * @return $this
      */
-    public function setTypeDefinition(TypeDefinitionNode $type) : self
+    public function setTypeDefinition(TypeDefinitionNode $type): self
     {
         $this->types[$type->getName()->value] = $type;
 
@@ -188,7 +178,7 @@ class DocumentAST implements Arrayable
      *
      * This operation will overwrite existing definitions with the same name.
      */
-    public function setDirectiveDefinition(DirectiveDefinitionNode $directive) : self
+    public function setDirectiveDefinition(DirectiveDefinitionNode $directive): self
     {
         $this->directives[$directive->name->value] = $directive;
 
@@ -203,16 +193,16 @@ class DocumentAST implements Arrayable
      *
      * @return SerializableDocumentAST
      */
-    public function toArray() : array
+    public function toArray(): array
     {
         return [
             // @phpstan-ignore-next-line Before serialization, those are arrays
-            self::TYPES                          => array_map([AST::class, 'toArray'], $this->types),
+            self::TYPES => array_map([AST::class, 'toArray'], $this->types),
             // @phpstan-ignore-next-line Before serialization, those are arrays
-            self::DIRECTIVES                     => array_map([AST::class, 'toArray'], $this->directives),
+            self::DIRECTIVES => array_map([AST::class, 'toArray'], $this->directives),
             self::CLASS_NAME_TO_OBJECT_TYPE_NAME => $this->classNameToObjectTypeNames,
-            self::SCHEMA_EXTENSIONS              => array_map([AST::class, 'toArray'], $this->schemaExtensions),
-            self::HASH                           => $this->hash,
+            self::SCHEMA_EXTENSIONS => array_map([AST::class, 'toArray'], $this->schemaExtensions),
+            self::HASH => $this->hash,
         ];
     }
 
@@ -220,11 +210,8 @@ class DocumentAST implements Arrayable
      * Instantiate from a serialized array.
      *
      * @param  SerializableDocumentAST  $ast
-     *
-     * @return DocumentAST
-     * @throws JsonException
      */
-    public static function fromArray(array $ast) : DocumentAST
+    public static function fromArray(array $ast): DocumentAST
     {
         $documentAST = new static();
         $documentAST->hydrateFromArray($ast);
@@ -233,30 +220,26 @@ class DocumentAST implements Arrayable
     }
 
     /** @return SerializableDocumentAST */
-    public function __serialize() : array
+    public function __serialize(): array
     {
         return $this->toArray();
     }
 
-    /** @param  SerializableDocumentAST  $data
-     * @throws JsonException
-     */
-    public function __unserialize(array $data) : void
+    /** @param  SerializableDocumentAST  $data */
+    public function __unserialize(array $data): void
     {
         $this->hydrateFromArray($data);
     }
 
-    /** @param  SerializableDocumentAST  $ast
-     * @throws JsonException
-     */
-    protected function hydrateFromArray(array $ast) : void
+    /** @param  SerializableDocumentAST  $ast */
+    protected function hydrateFromArray(array $ast): void
     {
         [
-            self::TYPES                          => $types,
-            self::DIRECTIVES                     => $directives,
+            self::TYPES => $types,
+            self::DIRECTIVES => $directives,
             self::CLASS_NAME_TO_OBJECT_TYPE_NAME => $this->classNameToObjectTypeNames,
-            self::SCHEMA_EXTENSIONS              => $schemaExtensions,
-            self::HASH                           => $this->hash,
+            self::SCHEMA_EXTENSIONS => $schemaExtensions,
+            self::HASH => $this->hash,
         ] = $ast;
 
         // Utilize the NodeList for lazy unserialization for performance gains.
@@ -267,10 +250,7 @@ class DocumentAST implements Arrayable
         // @phpstan-ignore-next-line Since we start from the array form, the generic type does not match
         $this->directives = new NodeList($directives);
         // @phpstan-ignore-next-line Since we start from the array form, the generic type does not match
-        $this->schemaExtensions = array_map(
-            fn(array $node) : SchemaExtensionNode => $this->hydrateSchemaExtension($node),
-            $schemaExtensions
-        );
+        $this->schemaExtensions = array_map(fn (array $node): SchemaExtensionNode => $this->hydrateSchemaExtension($node), $schemaExtensions);
     }
 
     /**
@@ -279,10 +259,8 @@ class DocumentAST implements Arrayable
      * TODO remove when this is implemented in https://github.com/webonyx/graphql-php
      *
      * @param  array<string, mixed>  $node
-     *
-     * @throws JsonException
      */
-    protected function hydrateSchemaExtension(array $node) : SchemaExtensionNode
+    protected function hydrateSchemaExtension(array $node): SchemaExtensionNode
     {
         $instance = new SchemaExtensionNode([]);
 
@@ -295,7 +273,7 @@ class DocumentAST implements Arrayable
                 continue;
             }
 
-            if (is_array($value)) {
+            if (\is_array($value)) {
                 $value = isset($value[0]) || $value === []
                     ? new NodeList($value)
                     : AST::fromArray($value);

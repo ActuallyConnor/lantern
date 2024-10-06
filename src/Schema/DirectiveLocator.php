@@ -1,6 +1,4 @@
-<?php
-
-declare(strict_types=1);
+<?php declare(strict_types=1);
 
 namespace Lantern\Schema;
 
@@ -11,12 +9,12 @@ use Illuminate\Container\Container;
 use Illuminate\Contracts\Events\Dispatcher as EventsDispatcher;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
-use Nuwave\Lighthouse\Events\RegisterDirectiveNamespaces;
-use Nuwave\Lighthouse\Exceptions\DirectiveException;
-use Nuwave\Lighthouse\Schema\AST\ASTHelper;
-use Nuwave\Lighthouse\Schema\Directives\BaseDirective;
-use Nuwave\Lighthouse\Support\Contracts\Directive;
-use Nuwave\Lighthouse\Support\Utils;
+use Lantern\Events\RegisterDirectiveNamespaces;
+use Lantern\Exceptions\DirectiveException;
+use Lantern\Schema\AST\ASTHelper;
+use Lantern\Schema\Directives\BaseDirective;
+use Lantern\Support\Contracts\Directive;
+use Lantern\Support\Utils;
 
 class DirectiveLocator
 {
@@ -37,11 +35,11 @@ class DirectiveLocator
      *
      * E.g.
      * [
-     *   'create' => 'Nuwave\Lighthouse\Schema\Directives\CreateDirective',
+     *   'create' => 'Lantern\Schema\Directives\CreateDirective',
      *   'custom' => 'App\GraphQL\Directives\CustomDirective',
      * ]
      *
-     * @var array<string, class-string<\Nuwave\Lighthouse\Support\Contracts\Directive>>
+     * @var array<string, class-string<\Lantern\Support\Contracts\Directive>>
      */
     protected array $resolvedClassnames = [];
 
@@ -59,12 +57,12 @@ class DirectiveLocator
         return $this->directiveNamespaces
             // When looking for a directive by name, the namespaces are tried in order
             ??= (new Collection([
-            // User defined directives come first
-            config('lighthouse.namespaces.directives'),
+                // User defined directives come first
+                config('lighthouse.namespaces.directives'),
 
-            // Built-in and plugin defined directives come next
-            $this->eventsDispatcher->dispatch(new RegisterDirectiveNamespaces()),
-        ]))
+                // Built-in and plugin defined directives come next
+                $this->eventsDispatcher->dispatch(new RegisterDirectiveNamespaces()),
+            ]))
             ->flatten()
             ->filter()
             // Ensure built-in directives come last
@@ -75,7 +73,7 @@ class DirectiveLocator
     /**
      * Scan the namespaces for directive classes.
      *
-     * @return array<string, class-string<\Nuwave\Lighthouse\Support\Contracts\Directive>>
+     * @return array<string, class-string<\Lantern\Support\Contracts\Directive>>
      */
     public function classes(): array
     {
@@ -130,7 +128,7 @@ class DirectiveLocator
     /**
      * Resolve the class for a given directive name.
      *
-     * @return class-string<\Nuwave\Lighthouse\Support\Contracts\Directive>
+     * @return class-string<\Lantern\Support\Contracts\Directive>
      */
     public function resolve(string $directiveName): string
     {
@@ -173,7 +171,7 @@ class DirectiveLocator
         );
     }
 
-    /** @param  class-string<\Nuwave\Lighthouse\Support\Contracts\Directive>  $directiveClass */
+    /** @param  class-string<\Lantern\Support\Contracts\Directive>  $directiveClass */
     public function setResolved(string $directiveName, string $directiveClass): self
     {
         $this->resolvedClassnames[$directiveName] = $directiveClass;
@@ -184,7 +182,7 @@ class DirectiveLocator
     /**
      * Get all directives that are associated with an AST node.
      *
-     * @return \Illuminate\Support\Collection<int, \Nuwave\Lighthouse\Support\Contracts\Directive>
+     * @return \Illuminate\Support\Collection<int, \Lantern\Support\Contracts\Directive>
      */
     public function associated(Node $node): Collection
     {
@@ -208,7 +206,7 @@ class DirectiveLocator
     /**
      * Get all directives of a certain type that are associated with an AST node.
      *
-     * @template TDirective of \Nuwave\Lighthouse\Support\Contracts\Directive
+     * @template TDirective of \Lantern\Support\Contracts\Directive
      *
      * @param  class-string<TDirective>  $directiveClass
      *
@@ -234,7 +232,7 @@ class DirectiveLocator
      * Use this for directives types that can only occur once, such as field resolvers.
      * This throws if more than one such directive is found.
      *
-     * @template TDirective of \Nuwave\Lighthouse\Support\Contracts\Directive
+     * @template TDirective of \Lantern\Support\Contracts\Directive
      *
      * @param  class-string<TDirective>  $directiveClass
      *
